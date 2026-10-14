@@ -1,5 +1,5 @@
 // Offline-Speicher: erst Netz (für Updates und neue Aufnahmen), sonst gespeicherte Version.
-const CACHE = 'bilder-kicker-v2';
+const CACHE = 'bilder-kicker-v3';
 const DATEIEN = ['./', './index.html', './aufnahmen.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 const STIMMEN = ['hallo', 'los', 'gleich', 'anders', 'froehlich', 'traurig', 'wuetend', 'ueberrascht', 'muede', 'schatten',
   'suchen', 'memory', 'tor', 'super', 'klasse', 'toll', 'nochmal', 'pokal', 'noch10', 'noch8', 'noch6', 'noch4', 'noch2',
