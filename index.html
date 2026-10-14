@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bilder-Kicker</title>
+<meta name="description" content="Ein einfaches Bilder-Spiel für Kinder ab 5: Gesichter und Dinge finden, erkennen und vergleichen – mit Fußball-Toren als Punkten.">
+<meta name="theme-color" content="#2e9e4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bilder-Kicker">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --rasen1: #3fae5a;
+  --rasen2: #36a051;
+  --linie: rgba(255, 255, 255, .55);
+  --karte: #ffffff;
+  --text: #1f2a24;
+  --leise: #5a6b61;
+  --gelb: #ffd23f;
+  --rot: #e8443a;
+  --blau: #2f6fe0;
+  --gruen: #22b573;
+  --schatten: 0 6px 0 rgba(0, 0, 0, .18), 0 10px 24px rgba(0, 0, 0, .12);
+  color-scheme: light;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background-color: var(--rasen1);
+  background-image:
+    radial-gradient(circle at 50% 46%, transparent 118px, var(--linie) 119px, var(--linie) 123px, transparent 124px),
+    linear-gradient(90deg, transparent calc(50% - 2px), var(--linie) calc(50% - 2px), var(--linie) calc(50% + 2px), transparent calc(50% + 2px)),
+    repeating-linear-gradient(90deg, var(--rasen1) 0 80px, var(--rasen2) 80px 160px);
+  background-attachment: fixed;
+  overscroll-behavior: none;
+  user-select: none; -webkit-user-select: none;
+  overflow-x: hidden;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+button:focus-visible { outline: 5px solid var(--gelb); outline-offset: 3px; }
+
+/* Anzeigetafel oben */
+.tafel {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  background: #13261b; color: #fff;
+  box-shadow: 0 4px 0 rgba(0,0,0,.25);
+}
+.tafel .tore { display: flex; align-items: center; gap: 8px; background: #0b1610; border-radius: 14px; padding: 6px 14px; font-weight: 900; font-size: 1.6rem; color: var(--gelb); font-variant-numeric: tabular-nums; }
+.tafel .tore .ball { font-size: 1.5rem; }
+.tafel .pokale { flex: 1; font-size: 1.5rem; letter-spacing: 2px; white-space: nowrap; overflow: hidden; }
+.tafel .tor-ziel { font-size: 2rem; }
+.rund { width: 54px; height: 54px; border-radius: 50%; background: #fff; color: var(--text); font-size: 1.6rem; box-shadow: 0 4px 0 rgba(0,0,0,.25); flex: none; display: grid; place-items: center; }
+.rund:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+.rund.klein { width: 44px; height: 44px; font-size: 1.2rem; opacity: .85; }
+
+main { max-width: 860px; margin: 0 auto; padding: 14px 14px calc(110px + env(safe-area-inset-bottom)); }
+
+/* Start */
+.start { text-align: center; padding-top: 10px; }
+.start .leo { width: min(260px, 60vw); height: auto; filter: drop-shadow(0 8px 0 rgba(0,0,0,.15)); animation: huepfen 2.2s ease-in-out infinite; }
+@keyframes huepfen { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.start h1 { color: #fff; font-size: 2.6rem; margin: 6px 0 2px; text-shadow: 0 4px 0 rgba(0,0,0,.25); }
+.start p { color: #fff; font-weight: 800; font-size: 1.2rem; margin: 0 0 18px; text-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.anstoss {
+  display: inline-flex; align-items: center; gap: 14px;
+  font-size: 2rem; font-weight: 900; color: #13261b;
+  background: var(--gelb); border-radius: 999px; padding: 18px 40px;
+  box-shadow: 0 8px 0 #c79a00, 0 14px 30px rgba(0,0,0,.25);
+}
+.anstoss:active { transform: translateY(5px); box-shadow: 0 3px 0 #c79a00; }
+.anstoss span { font-size: 2.4rem; animation: drehen 3s linear infinite; display: inline-block; }
+@keyframes drehen { to { transform: rotate(360deg); } }
+.eltern-link { display: block; margin: 40px auto 0; color: rgba(255,255,255,.85); text-decoration: underline; font-size: .9rem; }
+
+/* Aufgabe */
+.aufgabe { background: var(--karte); border-radius: 30px; box-shadow: var(--schatten); padding: 16px; text-align: center; }
+.anweisung { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
+.anweisung .symbol { font-size: 2.4rem; }
+.anweisung .text { font-weight: 900; font-size: 1.3rem; }
+.vorlesen { width: 62px; height: 62px; border-radius: 50%; background: var(--blau); color: #fff; font-size: 1.8rem; box-shadow: 0 5px 0 #1d4fae; flex: none; }
+.vorlesen:active { transform: translateY(3px); box-shadow: 0 2px 0 #1d4fae; }
+.ziel { display: inline-flex; align-items: center; justify-content: center; background: #fff7d6; border: 5px dashed var(--gelb); border-radius: 26px; padding: 8px 18px; margin: 4px auto 14px; }
+.ziel .bild { width: 120px; height: 120px; }
+.karten { display: grid; gap: 14px; grid-template-columns: repeat(var(--spalten, 3), minmax(0, 1fr)); max-width: 720px; margin: 0 auto; }
+.karten[style*="--spalten:2"] { max-width: 440px; }
+.karte {
+  aspect-ratio: 1; border-radius: 26px; background: #fff; border: 5px solid #d9eadf;
+  box-shadow: 0 6px 0 #b7d3c0; display: flex; align-items: center; justify-content: center; padding: 8px;
+  transition: transform .12s;
+}
+.karte:active { transform: scale(.95); }
+.karte.falsch { animation: wackeln .4s; opacity: .45; }
+.karte.richtig { border-color: var(--gruen); background: #e4f8ec; box-shadow: 0 6px 0 #8fd3ad; }
+.bild { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.bild svg { width: 100%; height: 100%; }
+.emoji { font-size: min(18vw, 96px); line-height: 1; }
+.schatten .emoji { filter: brightness(0); opacity: .85; }
+@keyframes wackeln { 20%, 60% { transform: translateX(-10px) rotate(-3deg); } 40%, 80% { transform: translateX(10px) rotate(3deg); } }
+
+/* Suchbild */
+.suchbild {
+  position: relative; width: 100%; max-width: 720px; aspect-ratio: 4 / 3; margin: 0 auto;
+  border-radius: 24px; overflow: hidden;
+  background: repeating-linear-gradient(90deg, #4fbf68 0 60px, #46b35f 60px 120px);
+  border: 5px solid #fff;
+}
+.suchbild button { position: absolute; transform: translate(-50%, -50%); line-height: 1; padding: 4px; border-radius: 16px; }
+.suchbild button.falsch { animation: wackeln .4s; opacity: .4; }
+.suchbild button.richtig { background: rgba(255,255,255,.85); outline: 5px solid var(--gelb); }
+
+/* Memory */
+.memory .karte { perspective: 600px; padding: 0; border: 0; background: none; box-shadow: none; }
+.memory .innen { position: relative; width: 100%; height: 100%; transition: transform .35s; transform-style: preserve-3d; }
+.memory .karte.offen .innen, .memory .karte.fertig .innen { transform: rotateY(180deg); }
+.memory .seite { position: absolute; inset: 0; border-radius: 22px; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
+.memory .rueck { background: #2f6fe0; border: 5px solid #fff; box-shadow: 0 6px 0 #1d4fae; font-size: min(12vw, 60px); }
+.memory .vorn { background: #fff; border: 5px solid #d9eadf; transform: rotateY(180deg); padding: 6px; }
+.memory .karte.fertig .vorn { border-color: var(--gruen); background: #e4f8ec; }
+
+/* Tor-Animation */
+#flugball { position: fixed; z-index: 60; font-size: 3rem; pointer-events: none; display: none; transition: left .6s cubic-bezier(.3,.7,.4,1), top .6s cubic-bezier(.3,0,.7,1), transform .6s; }
+#torText {
+  position: fixed; inset: 0; z-index: 55; display: none; align-items: center; justify-content: center; pointer-events: none;
+  font-size: min(26vw, 190px); font-weight: 900; color: var(--gelb);
+  text-shadow: 0 8px 0 #c79a00, 0 14px 40px rgba(0,0,0,.4); -webkit-text-stroke: 4px #13261b;
+}
+#torText.an { display: flex; animation: torPlopp .9s ease-out both; }
+@keyframes torPlopp { 0% { transform: scale(.2) rotate(-12deg); opacity: 0; } 40% { transform: scale(1.15) rotate(4deg); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+.tore.huepf { animation: huepf .5s; }
+@keyframes huepf { 40% { transform: scale(1.35); } }
+
+/* Spielzeit-Leiste ab Minute 20 */
+#zeitleiste {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: none;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: #13261b; color: #fff;
+}
+#zeitleiste.an { display: block; }
+.leiste-innen { max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.leiste-text { font-weight: 900; font-size: 1.15rem; white-space: nowrap; color: var(--gelb); min-width: 110px; }
+.bahn { position: relative; flex: 1; height: 44px; border-radius: 22px; background: repeating-linear-gradient(90deg, #3fae5a 0 30px, #36a051 30px 60px); border: 3px solid #fff; }
+.bahn .lball { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 2rem; transition: left 1s linear; }
+.bahn .ltor { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 2rem; }
+
+/* Overlays */
+.overlay {
+  position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center;
+  background: rgba(10, 25, 15, .75); padding: 20px;
+}
+.overlay.an { display: flex; animation: einblenden .3s; }
+@keyframes einblenden { from { opacity: 0; } }
+.stadionuhr {
+  background: #101a14; border: 8px solid #2b3a31; border-radius: 34px; padding: 26px 34px 30px;
+  color: var(--gelb); text-align: center; box-shadow: 0 0 0 6px #0005, 0 30px 60px #0008;
+  animation: plopp .5s cubic-bezier(.3,1.6,.5,1);
+}
+@keyframes plopp { from { transform: scale(.4); } }
+.stadionuhr .ring { width: min(56vw, 240px); height: auto; display: block; margin: 0 auto; }
+.stadionuhr .rest { font-size: 1.6rem; font-weight: 900; color: #fff; margin-top: 10px; letter-spacing: 1px; }
+.abpfiff-karte { background: #fff; border-radius: 34px; padding: 26px; text-align: center; max-width: 520px; box-shadow: var(--schatten); }
+.abpfiff-karte .gross { font-size: 5rem; line-height: 1; }
+.abpfiff-karte h2 { font-size: 2rem; margin: 10px 0; }
+.pokal-karte { background: #fff7d6; border-radius: 34px; padding: 26px 34px; text-align: center; border: 6px solid var(--gelb); animation: plopp .5s cubic-bezier(.3,1.6,.5,1); }
+.pokal-karte .gross { font-size: 6rem; line-height: 1; animation: drehen 2s ease-in-out; display: inline-block; }
+
+/* Pause-Bildschirm */
+.pause { text-align: center; color: #fff; padding-top: 30px; }
+.pause .mond { font-size: 6rem; line-height: 1; }
+.pause h1 { font-size: 2.2rem; margin: 10px 0; text-shadow: 0 4px 0 rgba(0,0,0,.25); }
+.pause .stand { display: inline-block; background: #13261b; color: var(--gelb); font-weight: 900; font-size: 1.4rem; padding: 10px 20px; border-radius: 18px; margin-top: 8px; }
+
+/* Eltern */
+.eltern { background: #fff; border-radius: 24px; padding: 20px; box-shadow: var(--schatten); }
+.eltern h2 { margin-top: 0; }
+.eltern .knopf { display: inline-flex; min-height: 52px; align-items: center; padding: 10px 18px; border-radius: 16px; background: var(--blau); color: #fff; font-weight: 800; margin: 6px 6px 0 0; }
+.eltern .knopf.rot { background: var(--rot); }
+.eltern .knopf.hell { background: #eef3ef; color: var(--text); }
+.eltern input { font: inherit; font-size: 1.3rem; padding: 10px 14px; border: 3px solid #d9eadf; border-radius: 14px; width: 140px; text-align: center; user-select: text; -webkit-user-select: text; }
+.eltern table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+.eltern td { padding: 6px 4px; border-bottom: 1px solid #e3ece6; }
+.klein { font-size: .9rem; color: var(--leise); }
+
+#konfetti { position: fixed; inset: 0; pointer-events: none; z-index: 80; overflow: hidden; }
+#konfetti span { position: absolute; top: -50px; font-size: 2rem; animation: fallen linear forwards; }
+@keyframes fallen { to { transform: translateY(115vh) rotate(600deg); } }
+
+@media (max-width: 560px) {
+  .anweisung .text { font-size: 1.05rem; }
+  .ziel .bild { width: 90px; height: 90px; }
+  .karten { gap: 10px; }
+  .start h1 { font-size: 2.1rem; }
+  .anstoss { font-size: 1.6rem; padding: 16px 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="tafel">
+  <button class="rund klein" id="heimKnopf" aria-label="Zum Start">🏠</button>
+  <div class="tore" id="tore" aria-label="Tore"><span class="ball" aria-hidden="true">⚽</span><span id="toreZahl">0</span></div>
+  <div class="pokale" id="pokale" aria-label="Pokale"></div>
+  <span class="tor-ziel" id="torZiel" aria-hidden="true">🥅</span>
+</header>
+<main id="bild"></main>
+
+<div id="zeitleiste" aria-live="polite">
+  <div class="leiste-innen">
+    <div class="leiste-text" id="leisteText">noch 10 Min.</div>
+    <div class="bahn"><span class="lball" id="leisteBall">⚽</span><span class="ltor">🥅</span></div>
+  </div>
+</div>
+<div class="overlay" id="overlay"></div>
+<div id="flugball" aria-hidden="true">⚽</div>
+<div id="torText" aria-hidden="true">TOR!</div>
+<div id="konfetti" aria-hidden="true"></div>
+
+<script>
+'use strict';
+// =====================================================================
+//  Bilder-Kicker – Bilderspiel für Kinder ab 5 Jahren
+//  Gesichter und Dinge wiederfinden, erkennen und vergleichen.
+//  Spielzeit: maximal 30 Minuten pro Tag. Ab Minute 20 alle 2 Minuten
+//  ein Countdown. Danach Abpfiff und Pause bis zum nächsten Tag.
+//  Alle Daten bleiben auf dem Gerät (localStorage).
+// =====================================================================
+
+const SPIELZEIT = 30 * 60;                     // Sekunden pro Tag
+const COUNTDOWNS = [20, 22, 24, 26, 28].map(m => m * 60);
+const TORE_PRO_POKAL = 5;
+
+const bild = document.getElementById('bild');
+const overlay = document.getElementById('overlay');
+
+// ---------- Hilfsfunktionen ----------
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+function mischen(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+const heute = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const warte = (ms) => new Promise(r => setTimeout(r, ms));
+
+// ---------- Speicher ----------
+const SPEICHER = 'bilder-kicker-v1';
+let S = { tag: heute(), sekunden: 0, toreHeute: 0, toreGesamt: 0, pokale: 0, gesperrt: null, niveau: 1, ton: true };
+try { Object.assign(S, JSON.parse(localStorage.getItem(SPEICHER)) || {}); } catch { /* ohne Speicher */ }
+function sichern() { try { localStorage.setItem(SPEICHER, JSON.stringify(S)); } catch { /* privates Fenster */ } }
+function neuerTagPruefen() {
+  if (S.tag !== heute()) { S.tag = heute(); S.sekunden = 0; S.toreHeute = 0; S.gesperrt = null; sichern(); }
+}
+neuerTagPruefen();
+
+// ---------- Stimme: eigene Aufnahmen, sonst Gerätestimme ----------
+const SAETZE = {
+  hallo: 'Hallo! Ich bin Leo. Komm, wir spielen zusammen!',
+  los: 'Anstoß! Los geht\'s!',
+  gleich: 'Finde das gleiche Bild!',
+  anders: 'Welches Bild ist anders?',
+  froehlich: 'Wo ist das fröhliche Gesicht?',
+  traurig: 'Wo ist das traurige Gesicht?',
+  wuetend: 'Wo ist das wütende Gesicht?',
+  ueberrascht: 'Wo ist das überraschte Gesicht?',
+  muede: 'Wo ist das müde Gesicht?',
+  schatten: 'Welcher Schatten passt zum Bild?',
+  suchen: 'Finde das Bild im großen Bild!',
+  memory: 'Finde immer zwei gleiche Karten!',
+  tor: 'Tor!',
+  super: 'Super gemacht!',
+  klasse: 'Klasse!',
+  toll: 'Toll, weiter so!',
+  nochmal: 'Fast! Probier es noch einmal.',
+  pokal: 'Juhu, du hast einen Pokal gewonnen!',
+  noch10: 'Noch zehn Minuten!',
+  noch8: 'Noch acht Minuten!',
+  noch6: 'Noch sechs Minuten!',
+  noch4: 'Noch vier Minuten!',
+  noch2: 'Noch zwei Minuten! Gleich ist Abpfiff.',
+  abpfiff: 'Abpfiff! Das war ein tolles Spiel. Morgen spielen wir weiter!',
+  morgen: 'Heute ist Pause. Morgen können wir wieder spielen!',
+};
+let aktuellerTon = null;
+function geraeteStimme(text) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'de-DE';
+    const stimmen = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
+    const kind = stimmen.find(v => /anna|helena|petra|marlene|vicki|kathrin/i.test(v.name)) || stimmen[0];
+    if (kind) u.voice = kind;
+    u.pitch = 1.6; u.rate = 0.95;
+    speechSynthesis.speak(u);
+  } catch { /* still */ }
+}
+function sag(id) {
+  if (!S.ton) return;
+  const text = SAETZE[id];
+  try { if (aktuellerTon) { aktuellerTon.pause(); } if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch { /* egal */ }
+  const auftrag = ++sagNummer;
+  aufnahmeLaden(id).then((url) => {
+    if (auftrag !== sagNummer) return;              // inzwischen kam eine neuere Ansage
+    if (!url) return geraeteStimme(text);
+    const a = new Audio(url);
+    aktuellerTon = a;
+    a.play().catch(() => geraeteStimme(text));
+  });
+}
+// Aufnahmen als Blob laden: funktioniert auch offline aus dem Speicher (Safari spielt sonst keine gespeicherten Tondateien)
+let sagNummer = 0;
+const aufnahmen = {};
+function aufnahmeLaden(id) {
+  if (id in aufnahmen) return Promise.resolve(aufnahmen[id]);
+  const versuch = (f) => fetch(`stimme/${id}.${f}`).then((r) => (r.ok ? r.blob() : null)).catch(() => null);
+  return versuch('m4a').then((b) => b || versuch('mp3')).then((b) => {
+    aufnahmen[id] = b && b.size > 0 ? URL.createObjectURL(b) : null;
+    return aufnahmen[id];
+  });
+}
+if ('speechSynthesis' in window) speechSynthesis.getVoices();
+
+// ---------- Geräusche ----------
+let ac;
+function audio() { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); return ac; }
+function ton(freqs, dauer = 0.1, art = 'sine', laut = 0.12) {
+  if (!S.ton) return;
+  try {
+    const c = audio(), t = c.currentTime;
+    freqs.forEach((f, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = art; o.frequency.value = f;
+      g.gain.setValueAtTime(laut, t + i * dauer);
+      g.gain.exponentialRampToValueAtTime(0.001, t + (i + 1) * dauer);
+      o.connect(g).connect(c.destination); o.start(t + i * dauer); o.stop(t + (i + 1) * dauer);
+    });
+  } catch { /* ohne Ton */ }
+}
+function jubel() {
+  if (!S.ton) return;
+  try {
+    const c = audio(), dauer = 1.4;
+    const puffer = c.createBuffer(1, c.sampleRate * dauer, c.sampleRate);
+    const d = puffer.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    const q = c.createBufferSource(); q.buffer = puffer;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 0.6;
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, c.currentTime); g.gain.exponentialRampToValueAtTime(0.25, c.currentTime + 0.15); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dauer);
+    q.connect(f).connect(g).connect(c.destination); q.start();
+  } catch { /* ohne Ton */ }
+}
+function pfiff(anzahl = 1) {
+  for (let i = 0; i < anzahl; i++) setTimeout(() => ton([2900, 2700, 2900], 0.08, 'square', 0.05), i * 450);
+}
+const klang = {
+  richtig: () => ton([784, 1047, 1319], 0.09),
+  falsch: () => ton([300, 240], 0.12, 'triangle', 0.08),
+  klick: () => ton([660], 0.04, 'sine', 0.05),
+};
+
+// ---------- Bilder ----------
+const DINGE = [
+  ['⚽', 'rund'], ['🏆', 'pokal'], ['👟', 'schuh'], ['🧤', 'hand'], ['🍌', 'banane'], ['🍓', 'beere'],
+  ['🐶', 'hund'], ['🐱', 'katze'], ['🐰', 'hase'], ['🦁', 'loewe'], ['🚗', 'auto'], ['🚀', 'rakete'],
+  ['🎈', 'ballon'], ['⭐', 'stern'], ['🌻', 'blume'], ['🍦', 'eis'], ['🧸', 'teddy'], ['🦆', 'ente'],
+  ['🐠', 'fisch'], ['🚲', 'rad'], ['🦒', 'giraffe'], ['🐘', 'elefant'], ['☂️', 'schirm'], ['🎸', 'gitarre'],
+];
+const ding = (e) => `<span class="emoji">${e}</span>`;
+
+const HAUT = ['#f9d7b5', '#eab890', '#c68a5e', '#8d5a3b'];
+const HAAR = ['#3b2a20', '#e8c15a', '#c2552d', '#1b1b1b', '#9a6a3a'];
+const FRISUR = ['kurz', 'locken', 'lang', 'zopf', 'muetze'];
+const MUETZE = ['#e8443a', '#2f6fe0', '#22b573'];
+const MUND = ['lachen', 'laecheln', 'offen'];
+const GEFUEHLE = ['froehlich', 'traurig', 'wuetend', 'ueberrascht', 'muede'];
+
+function zufallsGesicht() {
+  return { haut: pick(HAUT), haar: pick(HAAR), frisur: pick(FRISUR), muetze: pick(MUETZE), brille: Math.random() < 0.3, wangen: Math.random() < 0.5, mund: pick(MUND), gefuehl: null };
+}
+// Ändert ein Merkmal. Auffällige Merkmale für leichte Stufen, feine für schwere.
+const AUFFAELLIG = ['frisur', 'haar', 'brille', 'muetze'];
+const FEIN = ['mund', 'wangen', 'haut'];
+function variante(p, niveau) {
+  const merkmale = niveau >= 3 ? FEIN : niveau === 2 ? [...AUFFAELLIG, 'mund'] : AUFFAELLIG;
+  for (let k = 0; k < 30; k++) {
+    const m = pick(merkmale), q = { ...p };
+    if (m === 'brille' || m === 'wangen') q[m] = !p[m];
+    else if (m === 'muetze') { if (p.frisur !== 'muetze') { q.frisur = 'muetze'; } else q.muetze = pick(MUETZE.filter(x => x !== p.muetze)); }
+    else if (m === 'frisur') q.frisur = pick(FRISUR.filter(x => x !== p.frisur));
+    else if (m === 'haar') { if (p.frisur === 'muetze') continue; q.haar = pick(HAAR.filter(x => x !== p.haar)); }
+    else if (m === 'haut') q.haut = pick(HAUT.filter(x => x !== p.haut));
+    else if (m === 'mund') { if (p.gefuehl) continue; q.mund = pick(MUND.filter(x => x !== p.mund)); }
+    if (gesichtSchluessel(q) !== gesichtSchluessel(p)) return q;
+  }
+  return { ...p, brille: !p.brille };
+}
+const gesichtSchluessel = (p) => [p.haut, p.frisur, p.frisur === 'muetze' ? p.muetze : p.haar, p.brille, p.wangen, p.gefuehl || p.mund].join('|');
+
+function gesicht(p) {
+  const g = p.gefuehl;
+  let hinten = '', vorne = '';
+  const h = p.haar;
+  if (p.frisur === 'lang') hinten = `<path d="M18,52 C16,22 84,22 82,52 L84,86 L16,86 Z" fill="${h}"/>`;
+  if (p.frisur === 'zopf') hinten = `<circle cx="14" cy="44" r="10" fill="${h}"/><circle cx="86" cy="44" r="10" fill="${h}"/>`;
+  if (p.frisur === 'kurz') vorne = `<path d="M21,48 C20,20 80,20 79,48 C70,36 56,32 50,34 C42,30 30,36 21,48 Z" fill="${h}"/>`;
+  if (p.frisur === 'lang' || p.frisur === 'zopf') vorne = `<path d="M20,50 C19,18 81,18 80,50 C74,34 62,28 50,30 C38,28 26,34 20,50 Z" fill="${h}"/>`;
+  if (p.frisur === 'locken') vorne = [[26, 34], [36, 26], [50, 22], [64, 26], [74, 34], [22, 46], [78, 46]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="10" fill="${h}"/>`).join('');
+  if (p.frisur === 'muetze') vorne = `<path d="M19,44 C19,14 81,14 81,44 Z" fill="${p.muetze}"/><rect x="16" y="40" width="68" height="9" rx="4.5" fill="${p.muetze}" stroke="#0002" stroke-width="2"/><circle cx="50" cy="15" r="6" fill="#fff"/>`;
+
+  // Augen und Augenbrauen
+  let augen = '';
+  if (g === 'muede') augen = `<path d="M34,52 Q40,56 46,52 M54,52 Q60,56 66,52" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  else if (g === 'ueberrascht') augen = `<circle cx="40" cy="50" r="6" fill="#fff" stroke="#222" stroke-width="2"/><circle cx="60" cy="50" r="6" fill="#fff" stroke="#222" stroke-width="2"/><circle cx="40" cy="50" r="3" fill="#222"/><circle cx="60" cy="50" r="3" fill="#222"/>`;
+  else augen = `<circle cx="40" cy="51" r="4" fill="#222"/><circle cx="60" cy="51" r="4" fill="#222"/><circle cx="41.5" cy="49.5" r="1.3" fill="#fff"/><circle cx="61.5" cy="49.5" r="1.3" fill="#fff"/>`;
+  let brauen = '';
+  if (g === 'wuetend') brauen = `<path d="M32,41 L46,46 M68,41 L54,46" stroke="#222" stroke-width="3.5" stroke-linecap="round"/>`;
+  if (g === 'traurig') brauen = `<path d="M33,45 L45,41 M67,45 L55,41" stroke="#222" stroke-width="3" stroke-linecap="round"/>`;
+  if (g === 'ueberrascht') brauen = `<path d="M33,39 Q40,34 46,39 M54,39 Q60,34 67,39" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+
+  // Mund
+  const mundArt = g === 'froehlich' ? 'lachen' : g === 'traurig' ? 'traurig' : g === 'wuetend' ? 'wuetend' : g === 'ueberrascht' ? 'o' : g === 'muede' ? 'muede' : p.mund;
+  const MUENDER = {
+    lachen: '<path d="M37,62 Q50,78 63,62 Z" fill="#7a1f1f" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/><path d="M42,67 Q50,72 58,67" fill="#ff8a8a"/>',
+    laecheln: '<path d="M40,64 Q50,72 60,64" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>',
+    offen: '<ellipse cx="50" cy="66" rx="6" ry="4" fill="#7a1f1f" stroke="#222" stroke-width="2"/>',
+    traurig: '<path d="M39,71 Q50,61 61,71" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>',
+    wuetend: '<path d="M39,70 Q50,63 61,70" stroke="#222" stroke-width="3.5" fill="none" stroke-linecap="round"/>',
+    o: '<ellipse cx="50" cy="68" rx="6" ry="8" fill="#7a1f1f" stroke="#222" stroke-width="2.5"/>',
+    muede: '<path d="M44,67 L56,67" stroke="#222" stroke-width="3" stroke-linecap="round"/>',
+  };
+  const extra =
+    (g === 'traurig' ? '<path d="M62,56 Q66,64 62,66 Q58,64 62,56 Z" fill="#5ab4f0"/>' : '') +
+    (g === 'muede' ? '<text x="74" y="30" font-size="14" font-weight="900" fill="#2f6fe0" font-family="sans-serif">z</text><text x="82" y="20" font-size="10" font-weight="900" fill="#2f6fe0" font-family="sans-serif">z</text>' : '') +
+    (g === 'wuetend' ? '<circle cx="34" cy="62" r="5" fill="#ff6b5a" opacity=".5"/><circle cx="66" cy="62" r="5" fill="#ff6b5a" opacity=".5"/>' : '');
+  const wangen = p.wangen && !g ? '<circle cx="31" cy="61" r="5" fill="#ff8fa3" opacity=".7"/><circle cx="69" cy="61" r="5" fill="#ff8fa3" opacity=".7"/>' : '';
+  const brille = p.brille ? '<circle cx="40" cy="51" r="8.5" fill="none" stroke="#2b2b2b" stroke-width="2.5"/><circle cx="60" cy="51" r="8.5" fill="none" stroke="#2b2b2b" stroke-width="2.5"/><path d="M48.5,51 L51.5,51" stroke="#2b2b2b" stroke-width="2.5"/>' : '';
+
+  return `<svg viewBox="0 0 100 100" role="img" aria-label="Gesicht">${hinten}
+    <circle cx="20" cy="56" r="6" fill="${p.haut}" stroke="#0002" stroke-width="1.5"/><circle cx="80" cy="56" r="6" fill="${p.haut}" stroke="#0002" stroke-width="1.5"/>
+    <circle cx="50" cy="54" r="31" fill="${p.haut}" stroke="#0002" stroke-width="2"/>
+    ${vorne}${brauen}${augen}${brille}${wangen}${MUENDER[mundArt]}${extra}</svg>`;
+}
+
+// Leo, der Fußballjunge (Maskottchen)
+const LEO = `<svg class="leo" viewBox="0 0 160 190" role="img" aria-label="Leo, ein Junge, der Fußball spielt">
+  <ellipse cx="82" cy="182" rx="56" ry="7" fill="#0003"/>
+  <path d="M66,120 L56,166" stroke="#f1c39a" stroke-width="13" stroke-linecap="round"/>
+  <path d="M90,120 L116,150" stroke="#f1c39a" stroke-width="13" stroke-linecap="round"/>
+  <path d="M58,152 L54,168" stroke="#fff" stroke-width="14" stroke-linecap="round"/>
+  <path d="M110,143 L120,154" stroke="#fff" stroke-width="14" stroke-linecap="round"/>
+  <ellipse cx="50" cy="172" rx="13" ry="7" fill="#1b1b1b"/>
+  <ellipse cx="126" cy="158" rx="12" ry="7" fill="#1b1b1b" transform="rotate(40 126 158)"/>
+  <g transform="translate(140 166)"><circle r="15" fill="#fff" stroke="#1b1b1b" stroke-width="2.5"/><path d="M0,-6 L6,-2 4,5 -4,5 -6,-2 Z" fill="#1b1b1b"/><path d="M0,-6 L0,-15 M6,-2 L14,-5 M4,5 L9,12 M-4,5 L-9,12 M-6,-2 L-14,-5" stroke="#1b1b1b" stroke-width="2"/></g>
+  <rect x="58" y="108" width="44" height="24" rx="6" fill="#1b3c8a"/>
+  <path d="M52,74 Q80,62 108,74 L104,114 L56,114 Z" fill="#e8443a"/>
+  <path d="M54,78 L34,100" stroke="#e8443a" stroke-width="13" stroke-linecap="round"/>
+  <path d="M106,78 L128,64" stroke="#e8443a" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="31" cy="104" r="7" fill="#f1c39a"/><circle cx="132" cy="60" r="7" fill="#f1c39a"/>
+  <text x="80" y="104" text-anchor="middle" font-size="22" font-weight="900" fill="#fff" font-family="sans-serif">10</text>
+  <circle cx="80" cy="42" r="28" fill="#f1c39a"/>
+  <path d="M52,40 C50,10 110,10 108,40 C98,28 88,24 80,27 C70,22 60,28 52,40 Z" fill="#7a4a24"/>
+  <circle cx="70" cy="44" r="3.6" fill="#222"/><circle cx="90" cy="44" r="3.6" fill="#222"/>
+  <path d="M68,55 Q80,66 92,55" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="63" cy="53" r="4.5" fill="#ff8fa3" opacity=".7"/><circle cx="97" cy="53" r="4.5" fill="#ff8fa3" opacity=".7"/>
+</svg>`;
+
+// ---------- Aufgaben ----------
+// Jede Aufgabe: { art, sprache, symbol, text, ... }
+function aufgabeErzeugen(niveau) {
+  const arten = ['gleich', 'gleich', 'anders', 'anders', 'gefuehl', 'gefuehl', 'schatten', 'suchen', 'suchen', 'memory'];
+  let art;
+  do { art = pick(arten); } while (art === G.letzteArt && Math.random() < 0.85);
+  G.letzteArt = art;
+  return ERZEUGER[art](niveau);
+}
+
+const ERZEUGER = {
+  gleich(n) {
+    if (n === 1) {
+      const auswahl = mischen(DINGE).slice(0, 3).map(d => d[0]);
+      return { art: 'wahl', sprache: 'gleich', symbol: '🔍', text: 'Finde das gleiche Bild!', ziel: ding(auswahl[0]),
+        karten: mischen(auswahl.map((e, i) => ({ html: ding(e), richtig: i === 0 }))), spalten: 3 };
+    }
+    const anzahl = n === 2 ? 4 : 6;
+    const p = zufallsGesicht();
+    const liste = [p]; const schluessel = new Set([gesichtSchluessel(p)]);
+    while (liste.length < anzahl) {
+      const v = variante(p, n);
+      if (!schluessel.has(gesichtSchluessel(v))) { schluessel.add(gesichtSchluessel(v)); liste.push(v); }
+    }
+    return { art: 'wahl', sprache: 'gleich', symbol: '🔍', text: 'Finde das gleiche Gesicht!', ziel: gesicht(p),
+      karten: mischen(liste.map((q, i) => ({ html: gesicht(q), richtig: i === 0 }))), spalten: anzahl === 4 ? 2 : 3 };
+  },
+
+  anders(n) {
+    if (n === 1) {
+      const [a, b] = mischen(DINGE).slice(0, 2).map(d => d[0]);
+      const k = [a, a, a, b];
+      return { art: 'wahl', sprache: 'anders', symbol: '🤔', text: 'Welches Bild ist anders?',
+        karten: mischen(k.map((e, i) => ({ html: ding(e), richtig: i === 3 }))), spalten: 2 };
+    }
+    const p = zufallsGesicht(), v = variante(p, n);
+    const anzahl = n === 2 ? 4 : 6;
+    const k = Array.from({ length: anzahl - 1 }, () => p).concat([v]);
+    return { art: 'wahl', sprache: 'anders', symbol: '🤔', text: 'Welches Gesicht ist anders?',
+      karten: mischen(k.map((q, i) => ({ html: gesicht(q), richtig: i === anzahl - 1 }))), spalten: anzahl === 4 ? 2 : 3 };
+  },
+
+  gefuehl(n) {
+    const anzahl = n === 1 ? 3 : n === 2 ? 4 : 5;
+    const gefuehle = n === 1 ? mischen(['froehlich', 'traurig', 'wuetend']) : mischen(GEFUEHLE).slice(0, anzahl);
+    const gesucht = gefuehle[0];
+    const basis = zufallsGesicht();
+    const karten = gefuehle.map((g, i) => {
+      const p = n === 3 ? { ...zufallsGesicht(), gefuehl: g } : { ...basis, gefuehl: g };
+      return { html: gesicht(p), richtig: i === 0 };
+    });
+    const namen = { froehlich: 'fröhliche', traurig: 'traurige', wuetend: 'wütende', ueberrascht: 'überraschte', muede: 'müde' };
+    const symbole = { froehlich: '😀', traurig: '😢', wuetend: '😠', ueberrascht: '😮', muede: '😴' };
+    return { art: 'wahl', sprache: gesucht, symbol: symbole[gesucht], text: `Wo ist das ${namen[gesucht]} Gesicht?`,
+      karten: mischen(karten), spalten: anzahl === 4 ? 2 : 3 };
+  },
+
+  schatten(n) {
+    const anzahl = n === 1 ? 3 : 4;
+    const auswahl = [];
+    for (const d of mischen(DINGE)) {
+      if (!auswahl.some(a => a[1] === d[1])) auswahl.push(d);
+      if (auswahl.length === anzahl) break;
+    }
+    return { art: 'wahl', sprache: 'schatten', symbol: '🌑', text: 'Welcher Schatten passt zum Bild?', ziel: ding(auswahl[0][0]), schatten: true,
+      karten: mischen(auswahl.map((d, i) => ({ html: `<span class="schatten">${ding(d[0])}</span>`, richtig: i === 0 }))), spalten: anzahl === 4 ? 2 : 3 };
+  },
+
+  suchen(n) {
+    const anzahl = n === 1 ? 6 : n === 2 ? 10 : 14;
+    const auswahl = mischen(DINGE).slice(0, anzahl);
+    // Positionen auf einem Raster mit etwas Zufall, damit sich nichts überdeckt
+    const spalten = anzahl <= 6 ? 3 : anzahl <= 10 ? 4 : 5;
+    const reihen = Math.ceil(anzahl / spalten);
+    const plaetze = mischen(Array.from({ length: spalten * reihen }, (_, i) => i)).slice(0, anzahl);
+    const teile = auswahl.map((d, i) => {
+      const s = plaetze[i] % spalten, r = Math.floor(plaetze[i] / spalten);
+      const x = (s + 0.5) / spalten * 100 + rnd(-6, 6), y = (r + 0.5) / reihen * 100 + rnd(-6, 6);
+      return { e: d[0], x: Math.min(92, Math.max(8, x)), y: Math.min(88, Math.max(12, y)), richtig: i === 0, groesse: rnd(85, 115) / 100 };
+    });
+    return { art: 'suchen', sprache: 'suchen', symbol: '🔎', text: 'Finde das Bild im großen Bild!', ziel: ding(auswahl[0][0]), teile, anzahl };
+  },
+
+  memory(n) {
+    const paare = n === 1 ? 3 : n === 2 ? 4 : 6;
+    let motive;
+    if (n === 3) {
+      const gs = []; const sch = new Set();
+      while (gs.length < paare) { const p = zufallsGesicht(); if (!sch.has(gesichtSchluessel(p))) { sch.add(gesichtSchluessel(p)); gs.push(gesicht(p)); } }
+      motive = gs;
+    } else motive = mischen(DINGE).slice(0, paare).map(d => ding(d[0]));
+    const karten = mischen(motive.flatMap((m, i) => [{ html: m, paar: i }, { html: m, paar: i }]));
+    return { art: 'memory', sprache: 'memory', symbol: '🃏', text: 'Finde immer zwei gleiche Karten!', karten, paare, spalten: paare === 3 ? 3 : 4 };
+  },
+};
+
+// ---------- Spielablauf ----------
+let G = { letzteArt: null, serie: 0, fehlerSerie: 0, sperre: false };
+
+function anzeigeAktualisieren() {
+  document.getElementById('toreZahl').textContent = S.toreHeute;
+  document.getElementById('pokale').textContent = '🏆'.repeat(Math.min(S.pokale, 12)) + (S.pokale > 12 ? ` ×${S.pokale}` : '');
+}
+
+function startseite() {
+  G.aktiv = false;
+  overlay.className = 'overlay'; overlay.innerHTML = '';
+  if (S.gesperrt === heute()) return pauseSeite();
+  bild.innerHTML = `<div class="start">
+      ${LEO}
+      <h1>Bilder-Kicker</h1>
+      <p>Finde Bilder und schieß Tore mit Leo!</p>
+      <button class="anstoss" id="anstoss"><span aria-hidden="true">⚽</span> Anstoß!</button>
+      <button class="eltern-link" id="eltern">Für Eltern</button>
+    </div>`;
+  document.getElementById('anstoss').onclick = () => { pfiff(1); sag('los'); setTimeout(neueAufgabe, 900); G.aktiv = true; };
+  document.getElementById('eltern').onclick = elternTor;
+  setTimeout(() => { if (!G.aktiv && bild.querySelector('.start')) sag('hallo'); }, 500);
+}
+
+function neueAufgabe() {
+  if (S.gesperrt === heute()) return;
+  G.aktiv = true;
+  G.sperre = false;
+  const t = aufgabeErzeugen(S.niveau);
+  G.t = t;
+  G.versuch = 1;
+  const kopf = `<div class="anweisung">
+      <button class="vorlesen" id="vorlesen" aria-label="Aufgabe nochmal hören">🔊</button>
+      <span class="symbol" aria-hidden="true">${t.symbol}</span>
+      <span class="text">${t.text}</span>
+    </div>`;
+  const zielHtml = t.ziel ? `<div class="ziel"><div class="bild">${t.ziel}</div></div>` : '';
+
+  if (t.art === 'wahl') {
+    bild.innerHTML = `<div class="aufgabe">${kopf}${zielHtml}
+      <div class="karten" style="--spalten:${t.spalten}">${t.karten.map((k, i) => `<button class="karte" data-i="${i}" aria-label="Bild ${i + 1}"><div class="bild">${k.html}</div></button>`).join('')}</div></div>`;
+    bild.querySelectorAll('.karte').forEach(b => b.onclick = () => wahlGetroffen(b));
+  } else if (t.art === 'suchen') {
+    bild.innerHTML = `<div class="aufgabe">${kopf}${zielHtml}
+      <div class="suchbild">${t.teile.map((d, i) => `<button data-i="${i}" style="left:${d.x}%;top:${d.y}%;font-size:min(${t.anzahl > 10 ? 9 : 11}vw, ${Math.round((t.anzahl > 10 ? 58 : 72) * d.groesse)}px)" aria-label="Bild ${i + 1}">${d.e}</button>`).join('')}</div></div>`;
+    bild.querySelectorAll('.suchbild button').forEach(b => b.onclick = () => suchenGetroffen(b));
+  } else {
+    G.offen = []; G.gefunden = 0;
+    bild.innerHTML = `<div class="aufgabe">${kopf}
+      <div class="karten memory" style="--spalten:${t.spalten}">${t.karten.map((k, i) => `<button class="karte" data-i="${i}" aria-label="Karte ${i + 1}"><div class="innen"><div class="seite rueck">⚽</div><div class="seite vorn"><div class="bild">${k.html}</div></div></div></button>`).join('')}</div></div>`;
+    bild.querySelectorAll('.karte').forEach(b => b.onclick = () => memoryKlick(b));
+  }
+  document.getElementById('vorlesen').onclick = () => sag(t.sprache);
+  sag(t.sprache);
+}
+
+function wahlGetroffen(b) {
+  if (G.sperre || b.classList.contains('falsch')) return;
+  const k = G.t.karten[+b.dataset.i];
+  if (k.richtig) { b.classList.add('richtig'); treffer(b); }
+  else { b.classList.add('falsch'); daneben(); }
+}
+function suchenGetroffen(b) {
+  if (G.sperre || b.classList.contains('falsch')) return;
+  const d = G.t.teile[+b.dataset.i];
+  if (d.richtig) { b.classList.add('richtig'); treffer(b); }
+  else { b.classList.add('falsch'); daneben(); }
+}
+function memoryKlick(b) {
+  if (G.sperre || b.classList.contains('offen') || b.classList.contains('fertig')) return;
+  klang.klick();
+  b.classList.add('offen');
+  G.offen.push(b);
+  if (G.offen.length < 2) return;
+  const [a, c] = G.offen;
+  const pa = G.t.karten[+a.dataset.i].paar, pc = G.t.karten[+c.dataset.i].paar;
+  G.offen = [];
+  if (pa === pc) {
+    setTimeout(() => { a.classList.add('fertig'); c.classList.add('fertig'); klang.richtig(); }, 350);
+    G.gefunden++;
+    if (G.gefunden === G.t.paare) setTimeout(() => treffer(c), 700);
+  } else {
+    G.sperre = true;
+    setTimeout(() => { a.classList.remove('offen'); c.classList.remove('offen'); G.sperre = false; }, 1100);
+  }
+}
+
+function daneben() {
+  klang.falsch();
+  sag('nochmal');
+  G.versuch++;
+  G.serie = 0;
+}
+
+async function treffer(element) {
+  G.sperre = true;
+  klang.richtig();
+  // Schwierigkeit anpassen: nach 4 Treffern im ersten Versuch schwerer, nach 2 schwierigen Aufgaben leichter
+  if (G.versuch === 1) { G.serie++; G.fehlerSerie = 0; } else { G.fehlerSerie++; }
+  if (G.serie >= 4 && S.niveau < 3) { S.niveau++; G.serie = 0; }
+  if (G.fehlerSerie >= 2 && S.niveau > 1) { S.niveau--; G.fehlerSerie = 0; }
+
+  await ballFliegt(element);
+  S.toreHeute++; S.toreGesamt++;
+  const neuerPokal = S.toreGesamt % TORE_PRO_POKAL === 0;
+  if (neuerPokal) S.pokale++;
+  sichern();
+  anzeigeAktualisieren();
+  const tore = document.getElementById('tore');
+  tore.classList.remove('huepf'); void tore.offsetWidth; tore.classList.add('huepf');
+  jubel();
+  const tt = document.getElementById('torText');
+  tt.classList.remove('an'); void tt.offsetWidth; tt.classList.add('an');
+  sag(pick(['tor', 'super', 'klasse', 'toll']));
+  await warte(1300);
+  if (neuerPokal) { await pokalZeigen(); }
+  // Falls gerade eine Zeitansage läuft: warten, bis sie weg ist
+  while (overlay.classList.contains('an') && S.gesperrt !== heute()) await warte(300);
+  if (S.gesperrt === heute() || !G.aktiv) return;
+  neueAufgabe();
+}
+
+function ballFliegt(von) {
+  return new Promise(res => {
+    const ball = document.getElementById('flugball');
+    const r = von.getBoundingClientRect(), z = document.getElementById('torZiel').getBoundingClientRect();
+    ball.style.transition = 'none';
+    ball.style.display = 'block';
+    ball.style.left = (r.left + r.width / 2 - 24) + 'px';
+    ball.style.top = (r.top + r.height / 2 - 24) + 'px';
+    ball.style.transform = 'scale(1.4) rotate(0deg)';
+    void ball.offsetWidth;
+    ball.style.transition = '';
+    ball.style.left = (z.left + z.width / 2 - 24) + 'px';
+    ball.style.top = (z.top + z.height / 2 - 24) + 'px';
+    ball.style.transform = 'scale(.6) rotate(720deg)';
+    setTimeout(() => { ball.style.display = 'none'; res(); }, 650);
+  });
+}
+
+function pokalZeigen() {
+  return new Promise(res => {
+    konfetti();
+    sag('pokal');
+    overlay.innerHTML = `<div class="pokal-karte"><div class="gross">🏆</div><h2>Ein Pokal!</h2><p style="font-weight:800">Du hast schon ${S.pokale} ${S.pokale === 1 ? 'Pokal' : 'Pokale'}!</p></div>`;
+    overlay.className = 'overlay an';
+    const zu = () => { overlay.className = 'overlay'; overlay.innerHTML = ''; res(); };
+    overlay.onclick = zu;
+    setTimeout(zu, 3200);
+  });
+}
+
+function konfetti() {
+  const k = document.getElementById('konfetti');
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement('span');
+    s.textContent = pick(['⚽', '⭐', '🎉', '🏆', '✨']);
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.animationDuration = (2 + Math.random() * 1.8) + 's';
+    s.style.animationDelay = (Math.random() * 0.5) + 's';
+    k.appendChild(s);
+    setTimeout(() => s.remove(), 4500);
+  }
+}
+
+// ---------- Spielzeit, Countdown und Abpfiff ----------
+function zeitTakt() {
+  neuerTagPruefen();
+  if (document.visibilityState !== 'visible' || S.gesperrt === heute()) return;
+  if (!G.aktiv) return;                       // gezählt wird nur, während gespielt wird
+  const vorher = S.sekunden;
+  S.sekunden++;
+  if (S.sekunden % 5 === 0) sichern();
+  for (const grenze of COUNTDOWNS) if (vorher < grenze && S.sekunden >= grenze) countdownZeigen(Math.round((SPIELZEIT - grenze) / 60));
+  leisteAktualisieren();
+  if (S.sekunden >= SPIELZEIT) abpfiff();
+}
+setInterval(zeitTakt, 1000);
+
+function leisteAktualisieren() {
+  const leiste = document.getElementById('zeitleiste');
+  if (S.sekunden < COUNTDOWNS[0] || S.gesperrt === heute()) { leiste.classList.remove('an'); return; }
+  leiste.classList.add('an');
+  const rest = Math.max(0, SPIELZEIT - S.sekunden);
+  const anteil = (S.sekunden - COUNTDOWNS[0]) / (SPIELZEIT - COUNTDOWNS[0]);
+  document.getElementById('leisteBall').style.left = `calc(${(anteil * 86 + 4).toFixed(1)}% )`;
+  const min = Math.ceil(rest / 60);
+  document.getElementById('leisteText').textContent = rest > 60 ? `noch ${min} Min.` : `noch ${rest} Sek.`;
+}
+
+function countdownZeigen(minuten) {
+  const anteil = minuten / 10;
+  const umfang = 2 * Math.PI * 90;
+  overlay.innerHTML = `<div class="stadionuhr" role="alert">
+      <svg class="ring" viewBox="0 0 220 220" aria-hidden="true">
+        <circle cx="110" cy="110" r="90" fill="#0b120e" stroke="#26352c" stroke-width="18"/>
+        <circle cx="110" cy="110" r="90" fill="none" stroke="#ffd23f" stroke-width="18" stroke-linecap="round"
+          stroke-dasharray="${umfang}" stroke-dashoffset="${umfang * (1 - anteil)}" transform="rotate(-90 110 110)"/>
+        <text x="110" y="132" text-anchor="middle" font-size="76" font-weight="900" fill="#ffd23f" font-family="ui-rounded, sans-serif">${minuten}</text>
+      </svg>
+      <div class="rest">NOCH ${minuten} MINUTEN</div>
+    </div>`;
+  overlay.className = 'overlay an';
+  G.sperre = true;
+  pfiff(1);
+  setTimeout(() => sag('noch' + minuten), 500);
+  const zu = () => {
+    if (!overlay.querySelector('.stadionuhr')) return;
+    overlay.className = 'overlay'; overlay.innerHTML = '';
+    G.sperre = false;
+  };
+  overlay.onclick = zu;
+  setTimeout(zu, 5000);
+}
+
+function abpfiff() {
+  G.aktiv = false;
+  S.gesperrt = heute();
+  sichern();
+  leisteAktualisieren();
+  pfiff(3);
+  setTimeout(() => sag('abpfiff'), 1400);
+  konfetti();
+  overlay.innerHTML = `<div class="abpfiff-karte" role="alert">
+      <div class="gross">📣⚽🏆</div>
+      <h2>Abpfiff!</h2>
+      <p style="font-size:1.4rem;font-weight:900">Du hast heute <span style="color:#e8443a">${S.toreHeute}</span> ${S.toreHeute === 1 ? 'Tor' : 'Tore'} geschossen!</p>
+      <p class="klein">Morgen geht es weiter.</p>
+    </div>`;
+  overlay.className = 'overlay an';
+  overlay.onclick = null;
+  setTimeout(() => { overlay.className = 'overlay'; overlay.innerHTML = ''; pauseSeite(); }, 7000);
+}
+
+function pauseSeite() {
+  G.aktiv = false;
+  bild.innerHTML = `<div class="pause">
+      <div class="mond" aria-hidden="true">🌙⭐</div>
+      <h1>Heute ist Pause!</h1>
+      <p style="font-weight:800;font-size:1.2rem">Leo ruht sich aus. Morgen spielen wir weiter.</p>
+      <div class="stand">⚽ ${S.toreHeute} ${S.toreHeute === 1 ? 'Tor' : 'Tore'} heute</div>
+      <button class="eltern-link" id="eltern">Für Eltern</button>
+    </div>`;
+  document.getElementById('eltern').onclick = elternTor;
+  setTimeout(() => { if (bild.querySelector('.pause')) sag('morgen'); }, 600);
+}
+
+// ---------- Elternbereich ----------
+function elternTor() {
+  G.aktiv = false;
+  const a = rnd(6, 9), b = rnd(6, 9);
+  bild.innerHTML = `<div class="eltern">
+      <h2>Für Eltern</h2>
+      <p>Bitte lösen: <b>${a} × ${b}</b> = ?</p>
+      <input id="torFeld" inputmode="numeric" autocomplete="off" aria-label="Ergebnis">
+      <div><button class="knopf" id="torOk">Öffnen</button><button class="knopf hell" id="zurueck">Zurück</button></div>
+    </div>`;
+  document.getElementById('torOk').onclick = () => {
+    if (+document.getElementById('torFeld').value === a * b) elternBereich();
+    else document.getElementById('torFeld').value = '';
+  };
+  document.getElementById('zurueck').onclick = startseite;
+}
+
+function elternBereich() {
+  const mm = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  bild.innerHTML = `<div class="eltern">
+      <h2>Für Eltern</h2>
+      <table>
+        <tr><td>Spielzeit heute</td><td><b>${mm(S.sekunden)}</b> von 30:00 Minuten</td></tr>
+        <tr><td>Tore heute</td><td><b>${S.toreHeute}</b></td></tr>
+        <tr><td>Tore insgesamt</td><td><b>${S.toreGesamt}</b></td></tr>
+        <tr><td>Pokale</td><td><b>${S.pokale}</b></td></tr>
+        <tr><td>Schwierigkeit</td><td><b>Stufe ${S.niveau}</b> von 3 (passt sich automatisch an)</td></tr>
+        <tr><td>Heute gesperrt</td><td><b>${S.gesperrt === heute() ? 'ja' : 'nein'}</b></td></tr>
+      </table>
+      <p class="klein">Die Spielzeit zählt nur, während wirklich gespielt wird. Ab Minute 20 kommt alle 2 Minuten eine Zeitansage, nach 30 Minuten ist für heute Schluss.</p>
+      <div>
+        <button class="knopf" id="neueZeit">Heute nochmal 30 Minuten freigeben</button>
+        <button class="knopf hell" id="tonUm">Ton: ${S.ton ? 'an' : 'aus'}</button>
+        <button class="knopf hell" id="stimmen">Aufnahmen testen</button>
+        <button class="knopf rot" id="alles">Alles zurücksetzen</button>
+        <button class="knopf hell" id="zurueck">Zurück</button>
+      </div>
+      <p class="klein">Alle Daten bleiben nur auf diesem Gerät.</p>
+    </div>`;
+  document.getElementById('neueZeit').onclick = () => { S.sekunden = 0; S.gesperrt = null; sichern(); leisteAktualisieren(); startseite(); };
+  document.getElementById('tonUm').onclick = () => { S.ton = !S.ton; sichern(); elternBereich(); };
+  document.getElementById('stimmen').onclick = () => { location.href = 'aufnahmen.html'; };
+  document.getElementById('alles').onclick = () => {
+    if (confirm('Wirklich alle Tore, Pokale und die Spielzeit löschen?')) {
+      S = { tag: heute(), sekunden: 0, toreHeute: 0, toreGesamt: 0, pokale: 0, gesperrt: null, niveau: 1, ton: S.ton };
+      sichern(); anzeigeAktualisieren(); leisteAktualisieren(); startseite();
+    }
+  };
+  document.getElementById('zurueck').onclick = startseite;
+}
+
+// ---------- Start ----------
+document.getElementById('heimKnopf').onclick = () => { if (!overlay.classList.contains('an')) startseite(); };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sichern(); });
+anzeigeAktualisieren();
+leisteAktualisieren();
+startseite();
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bilder-Kicker – Aufnahmen</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; color: #1f2a24; background: #f4faf6; line-height: 1.5; }
+  h1 { margin-top: 0; }
+  .box { background: #fff; border-radius: 16px; padding: 16px 18px; box-shadow: 0 2px 10px rgba(0,0,0,.08); margin-bottom: 18px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e3ece6; vertical-align: middle; }
+  th { background: #e4f3e9; }
+  code { background: #eef3ef; padding: 2px 6px; border-radius: 6px; font-size: .95em; }
+  button { font: inherit; padding: 8px 14px; border-radius: 10px; border: 0; background: #2f6fe0; color: #fff; cursor: pointer; }
+  .ok { color: #1b7f4b; font-weight: 700; } .fehlt { color: #b3261e; font-weight: 700; }
+  a { color: #2f6fe0; }
+</style>
+</head>
+<body>
+<h1>🎙️ Aufnahmen für den Bilder-Kicker</h1>
+
+<div class="box">
+  <p>Die App spielt für jede Ansage eine eigene Tonaufnahme ab – am schönsten mit einer echten Kinderstimme. Fehlt eine Aufnahme, liest die Gerätestimme den Satz vor.</p>
+  <ol>
+    <li>Mit dem iPhone die App <b>Sprachmemos</b> öffnen und jeden Satz einzeln aufnehmen (ruhig und deutlich, kurz Pause vor und nach dem Satz).</li>
+    <li>Jede Aufnahme <b>genau so benennen</b> wie in der Spalte „Dateiname“ (ohne Umlaute, z. B. <code>gleich</code>).</li>
+    <li>Aufnahme antippen → <b>Teilen</b> → <b>In „Dateien“ sichern</b>. Die Dateien heißen dann z. B. <code>gleich.m4a</code>. Auch <code>.mp3</code> funktioniert.</li>
+    <li>Alle Dateien in den Ordner <code>stimme</code> legen (neben <code>index.html</code>) und mit hochladen.</li>
+    <li>Auf dieser Seite mit „Testen“ prüfen, ob jede Aufnahme gefunden wird.</li>
+  </ol>
+  <p><a href="index.html">← Zurück zum Spiel</a></p>
+</div>
+
+<table>
+  <thead><tr><th>Dateiname</th><th>Satz zum Einsprechen</th><th>Test</th></tr></thead>
+  <tbody id="liste"></tbody>
+</table>
+
+<script>
+const SAETZE = [
+  ['hallo', 'Hallo! Ich bin Leo. Komm, wir spielen zusammen!'],
+  ['los', 'Anstoß! Los geht\'s!'],
+  ['gleich', 'Finde das gleiche Bild!'],
+  ['anders', 'Welches Bild ist anders?'],
+  ['froehlich', 'Wo ist das fröhliche Gesicht?'],
+  ['traurig', 'Wo ist das traurige Gesicht?'],
+  ['wuetend', 'Wo ist das wütende Gesicht?'],
+  ['ueberrascht', 'Wo ist das überraschte Gesicht?'],
+  ['muede', 'Wo ist das müde Gesicht?'],
+  ['schatten', 'Welcher Schatten passt zum Bild?'],
+  ['suchen', 'Finde das Bild im großen Bild!'],
+  ['memory', 'Finde immer zwei gleiche Karten!'],
+  ['tor', 'Tor!'],
+  ['super', 'Super gemacht!'],
+  ['klasse', 'Klasse!'],
+  ['toll', 'Toll, weiter so!'],
+  ['nochmal', 'Fast! Probier es noch einmal.'],
+  ['pokal', 'Juhu, du hast einen Pokal gewonnen!'],
+  ['noch10', 'Noch zehn Minuten!'],
+  ['noch8', 'Noch acht Minuten!'],
+  ['noch6', 'Noch sechs Minuten!'],
+  ['noch4', 'Noch vier Minuten!'],
+  ['noch2', 'Noch zwei Minuten! Gleich ist Abpfiff.'],
+  ['abpfiff', 'Abpfiff! Das war ein tolles Spiel. Morgen spielen wir weiter!'],
+  ['morgen', 'Heute ist Pause. Morgen können wir wieder spielen!'],
+];
+const tbody = document.getElementById('liste');
+for (const [id, satz] of SAETZE) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><code>${id}</code></td><td>${satz}</td><td><button>Testen</button> <span></span></td>`;
+  const status = tr.querySelector('span');
+  tr.querySelector('button').onclick = () => {
+    const formate = ['m4a', 'mp3'];
+    const probiere = (i) => {
+      if (i >= formate.length) { status.textContent = 'fehlt'; status.className = 'fehlt'; return; }
+      const a = new Audio(`stimme/${id}.${formate[i]}`);
+      a.onerror = () => probiere(i + 1);
+      a.play().then(() => { status.textContent = `✓ ${id}.${formate[i]}`; status.className = 'ok'; }).catch(() => {});
+    };
+    probiere(0);
+  };
+  tbody.appendChild(tr);
+}
+</script>
+</body>
+</html>
